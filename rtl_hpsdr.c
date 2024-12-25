@@ -68,6 +68,9 @@ static u_int pc_sequence;
 
 static float rtl_lut[256];
 
+pthread_t hpsdrsim_thread_id;
+pthread_t watchdog_thread_id;
+
 void
 rtl_sighandler(int signum) {
 	printf("Signal caught, exiting!\n");
@@ -449,7 +452,13 @@ hpsdrsim_thread(void* arg) {
 
 						if(last_freq[j] != freq) {
 							// squelch minor (scrolling) freq changes to reduce print output
-							ftime(&mcb.freq_ttime[j]);
+							struct timespec ts;
+							clock_gettime(CLOCK_MONOTONIC, &ts);
+							mcb.freq_ttime[j].time = ts.tv_sec;
+							mcb.freq_ttime[j].millitm = ts.tv_nsec / 1000000;
+							mcb.freq_ttime[j].timezone = 0;
+							mcb.freq_ttime[j].dstflag = 0;
+							//ftime(&mcb.freq_ttime[j]);
 
 							if((((((mcb.freq_ttime[j].time * 1000) + mcb.freq_ttime[j].millitm) -
 										(mcb.freq_ltime[j].time * 1000) + mcb.freq_ltime[j].millitm)) > 2000)
@@ -479,7 +488,11 @@ hpsdrsim_thread(void* arg) {
 							}
 
 							last_freq[j] = freq;
-							ftime(&mcb.freq_ltime[j]);
+							mcb.freq_ltime[j].time = ts.tv_sec;
+							mcb.freq_ltime[j].millitm = ts.tv_nsec / 1000000;
+							mcb.freq_ltime[j].timezone = 0;
+							mcb.freq_ltime[j].dstflag = 0;
+							//ftime(&mcb.freq_ltime[j]);
 						}
 					}
 
